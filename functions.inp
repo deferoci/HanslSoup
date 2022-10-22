@@ -1,0 +1,146 @@
+function void remove_empty(strings *s)
+    loop i = 2 .. nelem(s)
+        if s[i] == ""
+            s = s[1:i-1] + s[i+1: nelem(s)]
+        endif
+    endloop
+    if s[1] == "" 
+        s = s[2:nelem(s)]
+    endif
+end function
+
+function scalar is_close_tag(string tag)
+    if tag[1] == "/"
+        return 1
+    else
+        return 0
+    endif
+end function
+
+function string join_str(strings arr, string chars)
+    string ret = ""
+    loop i = 1 .. nelem(arr) - 1
+        ret ~= arr[i]
+        ret ~= chars
+    endloop
+    ret ~= arr[nelem(arr)]
+    
+    return ret
+end function 
+
+function bundle node_class(bundle *parent, 
+                           string name,
+                           string tag,
+                           strings children[null],
+                           bundle attributes[null])
+    bundle self = null
+    string self.parent = parent.name
+    string self.name = name
+    string self.tag = tag
+    parent.children += name
+    if exists(children)
+        strings self.children = children
+    else 
+        strings self.children = null
+    endif
+    if exists(attributes)
+        self.attributes = attributes
+    endif
+    
+    return self
+end function
+
+function arrays get_elements(string s)
+    arrays ret = array(3)
+    strings tags = null
+    strings attr = null
+    strings text = null
+
+    ret[1] = tags
+    ret[2] = attr
+    ret[3] = text
+
+    blocks = strsplit(s, "<")
+    remove_empty(&blocks)
+    strings tags = null
+    
+    if instring(tolower(blocks[1]), "doctype") || instring(tolower(blocks[1]), "xml")
+        blocks = blocks[2:nelem(blocks)]
+    endif  
+    
+    loop i = 1 .. nelem(blocks)
+        if nelem(blocks[i]) < 1
+            continue
+        endif
+    
+        strings block = strsplit(blocks[i], ">")
+        # Block format: "tag elements", "text inside tag"
+        if nelem(block) > 1
+            tmpstr = ""
+            loop t = 2 .. nelem(block)
+                tmpstr ~= block[t]
+            endloop
+            ret[3] += tmpstr
+        else 
+            ret[3] += ""
+        endif
+
+        strings tag_elements = strsplit(block[1], " ")
+        # tag_elements format: "tag name", "tag attributes"
+        if nelem(tag_elements) > 1
+            tmpstr = ""
+            loop t = 2 .. nelem(tag_elements)
+                tmpstr ~= tag_elements[t]
+            endloop
+            ret[2] += tmpstr
+        else 
+            ret[2] += ""
+        endif
+
+        ret[1] += tag_elements[1]
+    endloop
+    
+    return ret
+end function
+
+function arrays fix_script(arrays arr)
+    arrays ret = array(3)
+    strings tags = null
+    strings attr = null
+    strings text = null
+
+    ret[1] = tags
+    ret[2] = attr
+    ret[3] = text
+
+    in_script = 0
+
+    loop i = 1 .. nelem(arr[1])
+        if in_script && arr[1][i] != "/script"
+            l = nelem(ret[1])
+            ret[3][in_script] ~= "<" ~ arr[1][l]
+            if arr[2][l] != ""
+                ret[3][in_script] ~= " " ~  arr[2][l]
+            endif
+            if arr[3][l] != ""
+                ret[3][in_script] ~= " " ~  arr[3][l]
+            endif
+        elif arr[1][i] == "/script"
+            in_script = 0
+            ret[1] += arr[1][i]
+            ret[2] += arr[2][i]
+            ret[3] += arr[3][i]
+        elif arr[1][i] == "script"
+            in_script = i
+            ret[1] += arr[1][i]
+            ret[2] += arr[2][i]
+            ret[3] += arr[3][i]
+        else
+            ret[1] += arr[1][i]
+            ret[2] += arr[2][i]
+            ret[3] += arr[3][i]
+        endif
+    endloop
+
+    return ret
+end function
