@@ -31,13 +31,16 @@ end function
 
 function bundle node_class(bundle *soup,
                            scalar selfIndex,
+                           scalar index,
                            scalar parent,
                            string tag,
                            bundle attributes[null])
     bundle self = null
+    scalar self.index = index
     scalar self.parent = parent
     string self.tag = tag
     soup.nodes[parent].children ~= {selfIndex}
+    soup.nodes[parent].children ~= {index}
     matrix self.children = {}
     if exists(attributes)
         self.attributes = attributes
@@ -291,6 +294,7 @@ function bundle HanslSoup(string f)
     string soup.nodes[1].tag = "root"
     matrix soup.nodes[1].children = {}
     strings soup.nodes[1].text = null
+    scalar soup.nodes[1].index = 1
 
     print soup.nodes
     string curr = "soup"
