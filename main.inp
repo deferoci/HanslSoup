@@ -1,40 +1,21 @@
 clear 
-set verbose off
+set max_verbose full
 
 include functions.inp
 
-function void print_indent(scalar level)
-    loop level
-        printf("\t")
-    endloop
-end function 
-
-function void remove_script(strings *s)
-    strings ret
-    scalar in_script = 0
-    loop i = 1 .. nelem(s)
-        if s[i] == "/script"
-            in_script = 0
-        elif in_script
-            continue
-        elif s[i] == "script"
-            in_script = 1
-        endif
-        ret += s[i]
-    endloop
-    s = ret
-end function
-
 url1 = "http://www2.econ.univpm.it/servizi/hpp/lucchetti/Home.htm"
 url2 = "https://www.google.com"
+url3 = "https://www.w3schools.com/xml/note.xml"
 
 f = readfile(url2)
-dat = get_elements(f)
-dat = fix_script(dat)
+soup = HanslSoup(f)
 
-loop i = 1 .. nelem(dat[1])
-    printf("[%d] - %s - %s - %s\n",i,dat[1][i],dat[2][i],dat[3][i])
+print tree(soup)
+/*
+loop i = 1 .. nelem(soup.nodes)
+    print soup.nodes[i] --tree
 endloop
 
-print {nelem(dat[1]), nelem(dat[2]), nelem(dat[3])}
+print soup.raw[3][11]
 
+*/
