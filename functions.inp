@@ -30,7 +30,6 @@ function string join_str(strings arr, string chars)
 end function 
 
 function bundle node_class(bundle *soup,
-                           scalar selfIndex,
                            scalar index,
                            scalar parent,
                            string tag,
@@ -39,7 +38,6 @@ function bundle node_class(bundle *soup,
     scalar self.index = index
     scalar self.parent = parent
     string self.tag = tag
-    soup.nodes[parent].children ~= {selfIndex}
     soup.nodes[parent].children ~= {index}
     matrix self.children = {}
     if exists(attributes)
