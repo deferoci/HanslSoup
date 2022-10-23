@@ -335,13 +335,66 @@ function string recursive_tree(const bundle soup, bundle node)
         string ret = ""
         loop i = 1 .. nelem(node.children)
                 ret ~= sprintf("\t|-%s", recursive_tree(soup, soup.nodes[node.children[i]]))
-        endloop
-        return ret
-    endif
+function string indent(scalar n)
+    string ret = ""
+    loop i = 1 .. n
+        ret ~= "    "
+    endloop
+
+    return ret
 end function
 
 function string tree(bundle soup)
     return recursive_tree(soup, soup.nodes[1])
+function string iterative_tree(const bundle soup)
+    string tree = ""
+    scalar level = 0
+    matrix visited = zeros(nelem(soup.nodes))
+    bundle curr = soup.nodes[1]
+    loop while !prodc(visited)
+        # never seen before the node
+        if visited[curr.index] == 0 
+            visited[curr.index] = 1
+            if level > 0 
+                tree ~= sprintf("%s+-- %s\n",indent(level-1), curr.tag)
+            else 
+                tree ~= sprintf("%s%s\n",indent(level-1), curr.tag)
+            endif
+            # if has children go to first
+            if nelem(curr.children)
+                curr = soup.nodes[curr.children[1]]
+                level += 1
+            # case node not has children go up
+            else 
+                curr = soup.nodes[curr.parent]
+                level -= 1
+            endif
+        # already seen 
+        else
+            # if I come back to node it must have children
+            # check if look inside all children
+            # if some child not see
+            if !prodc(visited[curr.children]) 
+                loop i = 1 .. nelem(curr.children)
+                    # child not found
+                    if visited[curr.children[i]]
+                        continue
+                    # child found
+                    else
+                        curr = soup.nodes[curr.children[i]]
+                        level += 1
+                        break
+                    endif
+                endloop
+            # all children alreay seen, go up
+            else 
+                curr = soup.nodes[curr.parent]
+                level -= 1
+            endif
+        endif
+    endloop
+
+    return tree
 end function
 
 function string text(bundle soup)
