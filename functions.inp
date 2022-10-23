@@ -328,13 +328,6 @@ function bundle HanslSoup(string f)
     return soup
 end function 
 
-function string recursive_tree(const bundle soup, bundle node)
-    if nelem(node.children) == 0
-        return node.tag
-    else
-        string ret = ""
-        loop i = 1 .. nelem(node.children)
-                ret ~= sprintf("\t|-%s", recursive_tree(soup, soup.nodes[node.children[i]]))
 function string indent(scalar n)
     string ret = ""
     loop i = 1 .. n
@@ -344,8 +337,6 @@ function string indent(scalar n)
     return ret
 end function
 
-function string tree(bundle soup)
-    return recursive_tree(soup, soup.nodes[1])
 function string iterative_tree(const bundle soup)
     string tree = ""
     scalar level = 0
@@ -397,9 +388,6 @@ function string iterative_tree(const bundle soup)
     return tree
 end function
 
-function string text(bundle soup)
-    return ""
-end function 
 function scalar is_void(string s)
     loop i=1..strlen(s)
         if (s[i] != " ") && (s[i] != sprintf("\n")) && (s[i] != sprintf("\r"))
