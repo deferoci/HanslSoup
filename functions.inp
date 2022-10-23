@@ -1,12 +1,13 @@
 function void remove_empty(strings *s)
-    loop i = 2 .. nelem(s)
-        if s[i] == ""
-            s = s[1:i-1] + s[i+1: nelem(s)]
+    strings ret = null
+
+    loop i = 1 .. nelem(s)
+        if s[i] != ""
+            ret += s[i]
         endif
     endloop
-    if s[1] == "" 
-        s = s[2:nelem(s)]
-    endif
+
+    s = ret
 end function
 
 function scalar is_close_tag(string tag)
@@ -28,24 +29,21 @@ function string join_str(strings arr, string chars)
     return ret
 end function 
 
-function bundle node_class(bundle *parent, 
-                           string name,
+function bundle node_class(bundle *soup,
+                           scalar selfIndex,
+                           scalar parent,
                            string tag,
-                           strings children[null],
                            bundle attributes[null])
     bundle self = null
-    string self.parent = parent.name
-    string self.name = name
+    scalar self.parent = parent
     string self.tag = tag
-    parent.children += name
-    if exists(children)
-        strings self.children = children
-    else 
-        strings self.children = null
-    endif
+    soup.nodes[parent].children ~= {selfIndex}
+    matrix self.children = {}
     if exists(attributes)
         self.attributes = attributes
     endif
+    strings self.text = null
+    scalar self.close = 0
     
     return self
 end function
@@ -60,37 +58,45 @@ function arrays get_elements(string s)
     ret[2] = attr
     ret[3] = text
 
-    blocks = strsplit(s, "<")
+    blocks = split(s, "<")
     remove_empty(&blocks)
     strings tags = null
-    
-    if instring(tolower(blocks[1]), "doctype") || instring(tolower(blocks[1]), "xml")
-        blocks = blocks[2:nelem(blocks)]
-    endif  
     
     loop i = 1 .. nelem(blocks)
         if nelem(blocks[i]) < 1
             continue
         endif
     
-        strings block = strsplit(blocks[i], ">")
+        strings block = split(blocks[i], ">")
         # Block format: "tag elements", "text inside tag"
         if nelem(block) > 1
             tmpstr = ""
             loop t = 2 .. nelem(block)
-                tmpstr ~= block[t]
+                if t == 2 
+                    tmpstr ~= block[t]
+                else
+                    if block[t] != ""
+                        tmpstr ~= ">" ~ block[t]
+                    endif
+                endif
             endloop
             ret[3] += tmpstr
         else 
             ret[3] += ""
         endif
 
-        strings tag_elements = strsplit(block[1], " ")
+        strings tag_elements = split(block[1], " ")
         # tag_elements format: "tag name", "tag attributes"
         if nelem(tag_elements) > 1
             tmpstr = ""
             loop t = 2 .. nelem(tag_elements)
-                tmpstr ~= tag_elements[t]
+                if t == 2
+                    tmpstr ~= tag_elements[t]
+                else
+                    if tag_elements[t] != ""
+                        tmpstr ~= " " ~ tag_elements[t]
+                    endif
+                endif
             endloop
             ret[2] += tmpstr
         else 
@@ -144,3 +150,197 @@ function arrays fix_script(arrays arr)
 
     return ret
 end function
+
+function string get_id(string name)
+    if name[1] == "!"
+        name = name[2:nelem(name)]
+    endif
+    return name ~ sprintf("%d",randint(1000,9999)) 
+end function
+
+function bundle get_attributes(string att)
+    bundle ret = null
+    strings blocks = split(att, "\"")
+    i = 1
+    loop while i < nelem(blocks)
+        key = split(blocks[i],"=")[1]
+        val = blocks[i+1]
+        ret["@key"] = val
+        i += 2
+    endloop
+
+    return ret
+end function
+
+function scalar look_for_last_open(bundle nodes, string tag)
+    ret = 0
+    loop i = 1 .. nelem(nodes)
+        if (nodes[i].tag == tag) && (nodes[i].close == 0)
+            ret = i
+        endif
+    endloop
+
+    return ret
+end function
+
+function matrix get_closest_position(strings dat)
+
+    matrix closest_positions = zeros(nelem(dat))
+
+    loop i = 2 .. nelem(dat)
+        tag = dat[i]
+        if tag[1] == "/"
+            tag = tag[2:nelem(tag)]
+            max_index = 0
+            loop t = 1 .. (i - 1)
+                if dat[t] == tag
+                    max_index = t
+                endif   
+            endloop
+            errorif(max_index == 0, "No parent found")
+            closest_positions[max_index] = i
+            closest_positions[i] = max_index
+        endif
+    endloop
+
+    return closest_positions
+end function
+
+
+function matrix get_parent_positions(strings dat)
+    matrix closest_positions = get_closest_position(dat)
+
+    matrix parent_positions = {}
+    matrix orphans = {}
+
+    loop i = 1 .. nelem(closest_positions)
+        near_parent = 0
+        if is_close_tag(dat[i])
+            parent_positions |= parent_positions[closest_positions[i]]
+            continue
+        else
+            loop t = 1 .. (i - 1)
+                if closest_positions[i] == 0
+                    if closest_positions[t] > i
+                        near_parent = t
+                    endif
+                else
+                    if closest_positions[t] > closest_positions[i]
+                        near_parent = t
+                    endif
+                endif
+            endloop
+            parent_positions |= {near_parent}
+        endif
+    endloop
+
+    parent_positions = {0} | (parent_positions .+ 1)
+
+    return parent_positions
+end function
+
+function scalar last_node_index(bundles b)
+    m = 0
+    loop i = 1 .. nelem(b)
+        if nelem(b[i])
+            m = i
+        endif
+    endloop
+
+    return m
+end function
+
+function scalar n_open_tags(strings s)
+    n = 0
+    loop i = 1 .. nelem(s)
+        if s[i][1] != "/"
+            n += 1
+        endif
+    endloop
+
+    return n
+end function
+
+function strings split(string s, string c)
+    strings ret = null
+    ret += ""
+    loop i = 1 .. strlen(s)
+        if s[i] == c
+            ret += ""
+        else
+            ret[nelem(ret)] ~= s[i] 
+        endif
+    endloop
+    
+    return ret
+end function
+
+function bundle HanslSoup(string f)
+    dat = get_elements(f)
+    dat = fix_script(dat)
+
+    parent_positions = get_parent_positions(dat[1])
+
+    bundle soup = null
+
+    string soup.name = "soup"
+    bundle soup.parent = null
+    bundles soup.nodes = array(n_open_tags(dat[1]) + 1)
+    arrays soup.raw = dat
+    scalar soup.nodes[1].parent = 0
+    string soup.nodes[1].tag = "root"
+    matrix soup.nodes[1].children = {}
+    strings soup.nodes[1].text = null
+
+    print soup.nodes
+    string curr = "soup"
+
+    scalar max_of_nodes_index = 1
+
+    # key (position in parent) : value (position in nodes)
+    bundle dict = null
+    dict["1"] = 1
+    matrix index_in_parent_matrix = nelem(dat[1])
+
+    loop i = 2 .. rows(parent_positions)
+        # case open tag
+        if !is_close_tag(dat[1][i-1])
+            scalar node_index = last_node_index(soup.nodes) + 1
+            string parent_index_in_matrix = sprintf("%d", parent_positions[i])
+            scalar parent_index = dict[parent_index_in_matrix]
+            soup.nodes[node_index] = node_class(&soup, node_index, parent_index, dat[1][i-1], get_attributes(dat[2][i-1]))
+            soup.nodes[node_index].text += dat[3][i-1]
+            string curr_index = sprintf("%d", i)
+            dict[curr_index] = node_index
+        #case close tag
+        else 
+            s = sprintf("%d", parent_positions[i])
+            parent_node_index = dict[s]
+            soup.nodes[parent_node_index].text += ""
+            soup.nodes[parent_node_index].text += dat[3][i-1]
+        endif
+    endloop
+
+    return soup
+end function 
+
+function string recursive_tree(const bundle soup, bundle node)
+    if nelem(node.children) == 0
+        return node.tag
+    else
+        string ret = ""
+        loop i = 1 .. nelem(node.children)
+                ret ~= sprintf("\t|-%s", recursive_tree(soup, soup.nodes[node.children[i]]))
+        endloop
+        return ret
+    endif
+end function
+
+function string tree(bundle soup)
+    return recursive_tree(soup, soup.nodes[1])
+end function
+
+function string text(bundle soup)
+    return ""
+end function 
+
