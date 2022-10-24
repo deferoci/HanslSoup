@@ -318,8 +318,10 @@ function bundle HanslSoup(string f)
         else 
             s = sprintf("%d", parent_positions[i])
             parent_node_index = dict[s]
-            soup.nodes[parent_node_index].text += ""
-            soup.nodes[parent_node_index].text += dat[3][i-1]
+            if !is_void(dat[3][i-1])
+                soup.nodes[parent_node_index].text += ""
+                soup.nodes[parent_node_index].text += dat[3][i-1]
+            endif
         endif
     endloop
 
