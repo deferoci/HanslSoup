@@ -281,6 +281,8 @@ function bundle HanslSoup(string f)
     dat = fix_script(dat)
 
     parent_positions = get_parent_positions(dat[1])
+    matrix close = get_closest_position(dat[1])
+    matrix impostors = close .= 0
 
     bundle soup = null
 
