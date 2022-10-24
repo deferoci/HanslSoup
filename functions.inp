@@ -454,3 +454,18 @@ function string text(const bundle soup)
     return ret 
     
 end function
+
+function bundle get_element_by_id(bundle soup, string id)
+    bundle ret = null
+    loop i = 1 .. nelem(soup.nodes)
+        strings keys = getkeys(soup.nodes[i].attributes)
+        if instrings(keys, "id")
+            if soup.nodes[i].attributes["id"] == id
+                return soup.nodes[i]
+            endif
+        endif
+    endloop
+
+    return ret
+end function
+
