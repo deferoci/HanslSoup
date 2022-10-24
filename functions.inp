@@ -403,7 +403,7 @@ function string text(const bundle soup)
         if nelem(soup.nodes[i].text) > 0 
             pointed_child = 0
             loop t = 1 .. nelem(soup.nodes[i].text)
-                if issoup.nodes[i].text[t] == ""
+                if soup.nodes[i].text[t] == ""
                     pointed_child += 1
                 else
                     if is_void(soup.nodes[i].text[t])
