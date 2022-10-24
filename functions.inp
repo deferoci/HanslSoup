@@ -276,11 +276,21 @@ function strings split(string s, string c)
     return ret
 end function
 
+function string remove_carr_ret(string s)
+    return regsub(s,sprintf("[\r]"),"")
+end function
+
 function bundle HanslSoup(string f)
+
+    #f = remove_carr_ret(f)
+    f = regsub(f,sprintf("[\r]"),"")
+    
     dat = get_elements(f)
+
     dat = fix_script(dat)
 
     parent_positions = get_parent_positions(dat[1])
+
     matrix close = get_closest_position(dat[1])
     matrix impostors = close .= 0
 
@@ -413,8 +423,7 @@ function string text(const bundle soup)
     */
     
     strings text = array(nelem(soup.nodes))
-    print nelem(soup.nodes)
-    flush
+
     loop i = 1 .. nelem(soup.nodes)
         if nelem(soup.nodes[i].text) > 0 
             pointed_child = 0
