@@ -396,6 +396,18 @@ function scalar is_void(string s)
 end function
 
 function string text(const bundle soup)
+    /*
+    string ret = ""
+    loop i = 1 .. nelem(soup.raw[3])
+        if !is_void(soup.raw[3][i])
+            ret ~= soup.raw[3][i]
+        endif
+    endloop
+    ret ~= sprintf("\n")
+
+    return ret
+    */
+    
     strings text = array(nelem(soup.nodes))
     print nelem(soup.nodes)
     flush
@@ -427,4 +439,5 @@ function string text(const bundle soup)
     ret = join_str(text, "")
 
     return ret 
+    
 end function
