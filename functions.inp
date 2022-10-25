@@ -59,7 +59,7 @@ function arrays get_elements(string s)
     ret[2] = attr
     ret[3] = text
 
-    blocks = split(s, "<")
+    blocks = strsplit(s, "<")
     remove_empty(&blocks)
     strings tags = null
     
@@ -68,7 +68,7 @@ function arrays get_elements(string s)
             continue
         endif
     
-        strings block = split(blocks[i], ">")
+        strings block = strsplit(blocks[i], ">")
         # Block format: "tag elements", "text inside tag"
         if nelem(block) > 1
             tmpstr = ""
@@ -86,7 +86,7 @@ function arrays get_elements(string s)
             ret[3] += ""
         endif
 
-        strings tag_elements = split(block[1], " ")
+        strings tag_elements = strsplit(block[1], " ")
         # tag_elements format: "tag name", "tag attributes"
         if nelem(tag_elements) > 1
             tmpstr = ""
@@ -161,10 +161,10 @@ end function
 
 function bundle get_attributes(string att)
     bundle ret = null
-    strings blocks = split(att, "\"")
+    strings blocks = strsplit(att, "\"")
     i = 1
     loop while i < nelem(blocks)
-        key = split(blocks[i],"=")[1]
+        key = strsplit(blocks[i], "=")[1]
         val = blocks[i+1]
         ret["@key"] = val
         i += 2
@@ -198,7 +198,7 @@ function matrix get_closest_position(strings dat)
                     max_index = t
                 endif   
             endloop
-            errorif(max_index == 0, "No parent found")
+            errorif(max_index == 0, sprintf("No parent found for: %s, index %d",dat[i], i))
             closest_positions[max_index] = i
             closest_positions[i] = max_index
         endif
@@ -260,20 +260,6 @@ function scalar n_open_tags(strings s)
     endloop
 
     return n
-end function
-
-function strings split(string s, string c)
-    strings ret = null
-    ret += ""
-    loop i = 1 .. strlen(s)
-        if s[i] == c
-            ret += ""
-        else
-            ret[nelem(ret)] ~= s[i] 
-        endif
-    endloop
-    
-    return ret
 end function
 
 function string remove_carr_ret(string s)
