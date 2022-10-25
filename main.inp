@@ -6,11 +6,14 @@ include functions.inp
 url1 = "http://www2.econ.univpm.it/servizi/hpp/lucchetti/Home.htm"
 url2 = "https://www.google.com"
 url3 = "https://www.w3schools.com/xml/note.xml"
+page = "https://it.wikipedia.org/wiki/RSA_Factoring_Challenge"
 
-f = readfile(url2)
+f = readfile(url1)
+print strlen(f)
+
 soup = HanslSoup(f)
 
-print tree(soup)
+#print tree(soup)
 /*
 loop i = 1 .. nelem(soup.nodes)
     print soup.nodes[i] --tree
