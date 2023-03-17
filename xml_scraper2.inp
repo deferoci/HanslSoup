@@ -1,0 +1,99 @@
+clear
+set verbose off
+
+
+function void refill_less_than(strings *l)
+    loop i = 1 .. nelem(l)
+        if i == 1
+            continue
+        else
+            l[i] = "<" ~ l[i] 
+        endif
+    endloop
+
+    if l[1] == ""
+        l = l[-1]
+    endif      
+end function 
+
+function void refill_greater_than(strings *l)
+    loop i = 1 .. nelem(l)
+        if i == nelem(l)
+            continue
+        else
+            l[i] ~= ">"
+        endif
+    endloop
+
+    if l[nelem(l)] == ""
+        l = l[-nelem(l)]
+    endif      
+end function 
+
+function scalar is_close_tag(string s)
+    if strlen(s) > 3 && s[1:2] == "</" && s[nelem(s)] == ">" && !instring(s, " ")
+        return 1
+    endif
+    return 0
+end function 
+
+function scalar is_comment(string s)
+    if strlen(s) >= 7 && s[1:4] == "<!--" && s[nelem(s)-2: nelem(s)] == "-->"
+        return 1
+    endif
+    return 0
+end function
+
+function bundle HanslSoup(string link)
+    raw = readfile(link)
+    errorif($error, "Error opening file")
+    errorif(raw == "", "Empty file")
+    bundle Data = null
+    
+    raw_first_split = strsplit(raw, "<")
+    refill_less_than(&raw_first_split)
+
+    arrays raw_second_split = null
+    
+    loop i = 1 .. nelem(raw_first_split)
+        raw_temp_split  = strsplit(raw_first_split[i], ">")
+        refill_greater_than(&raw_temp_split)
+        raw_second_split += raw_temp_split
+    endloop
+
+    strings raw_split = null
+
+    loop i = 1 .. nelem(raw_second_split)
+        loop t = 1 .. nelem(raw_second_split[i])
+            raw_split += raw_second_split[i][t]
+        endloop
+    endloop
+
+    Data.raw = raw_split
+    Data.header = raw_split[1]
+    raw_split = raw_split[-1]
+    
+    /*
+    
+    loop while nelem(raw_split) != 0
+        if is_comment(raw_split[nelem(raw_split)])
+            raw_split = raw_split[nelem(raw_split)]
+        elif
+             
+    endloop
+    
+    */
+    
+    return Data
+end function
+
+
+link = "https://www.google.it"
+soup = HanslSoup(link)
+
+raw = soup.raw 
+#print soup.header
+#print raw --range=1:
+
+        
+       
